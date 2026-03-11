@@ -1,0 +1,96 @@
+public interface ISaveFile
+{
+    Task<string> SaveAsync(IFormFile arquivo, string storagePath, string pasta);
+}
+----------------------------------------------------------------------------------
+using Microsoft.AspNetCore.Http;
+
+public class SaveFile : ISaveFile
+{
+    public async Task<string> SaveAsync(IFormFile arquivo, string storagePath, string pasta)
+    {
+        if (arquivo == null || arquivo.Length == 0)
+        {
+            throw new ArgumentException("Arquivo inválido ou vazio");
+        }
+        // Delegar para overload por stream
+        using var ms = new MemoryStream();
+        await arquivo.CopyToAsync(ms);
+        ms.Position = 0;
+
+        return await SaveFileStream.SaveAsync(ms, arquivo.FileName, storagePath, pasta);
+    }
+}
+-------------------------------------------------------------------------------------------------------------------------------
+public class SaveFileStream
+{
+    public static async Task<string> SaveAsync(Stream arquivoStream, string fileName, string storagePath, string pasta)
+    {
+        if (arquivoStream == null || arquivoStream.Length == 0) throw new ArgumentException("Arquivo inválido ou vazio");
+        
+        if (string.IsNullOrWhiteSpace(storagePath)) throw new ArgumentException("Storage path não configurado");
+        
+        // Obter a extensão do arquivo
+        string extensao = Path.GetExtension(fileName).ToLowerInvariant();
+
+        // Validar extensões permitidas
+        if (!Extensions.ExtensaoPermitida(extensao)) throw new ArgumentException($"Tipo de arquivo não permitido: {extensao}");
+        
+        // Criar o caminho da pasta
+        string caminhoUpload = Path.Combine(storagePath, pasta);
+
+        // Certificar que a pasta existe
+        if (!Directory.Exists(caminhoUpload)) Directory.CreateDirectory(caminhoUpload);
+        
+        // Usar o nome do arquivo fornecido (nome único será gerado na Application Layer)
+        string caminhoCompleto = Path.Combine(caminhoUpload, fileName);
+
+        // Salvar o arquivo a partir do stream
+        arquivoStream.Position = 0;
+        using var stream = new FileStream(caminhoCompleto, FileMode.Create);
+        await arquivoStream.CopyToAsync(stream);
+
+        return caminhoCompleto;
+    }
+}
+===================================================================================================================================
+public class Extensions
+{
+    public static bool ExtensaoPermitida(string extensao)
+    {
+        // Lista de extensões permitidas
+        string[] extensoesPermitidas = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx"];
+
+        return Array.Exists(extensoesPermitidas, e => e.Equals(extensao, StringComparison.OrdinalIgnoreCase));
+    }
+}
+===================================================================================================================================
+
+public interface IDeleteFile
+{
+    Task<string> DeleteAsync(string caminhoArquivo);
+}
+----------------------------------------------------------------------------------
+public class DeleteFile : IDeleteFile
+{
+    public async Task<string> DeleteAsync(string caminhoArquivo)
+    {
+        if (string.IsNullOrWhiteSpace(caminhoArquivo)) return "Caminho do arquivo não pode ser vazio";
+        
+        try
+        {
+            // Verificar se o arquivo existe
+            if (!File.Exists(caminhoArquivo)) return "Arquivo não encontrado";
+            
+            // Deletar o arquivo de forma assíncrona
+            await Task.Run(() => File.Delete(caminhoArquivo));
+            return "Arquivo deletado com sucesso";
+        }
+        catch (Exception ex)
+        {
+            // Log da exceção pode ser adicionado aqui
+            return $"Erro ao deletar arquivo: {ex.Message}";
+        }
+    }
+}
+===================================================================================================================================
