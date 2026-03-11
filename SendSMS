@@ -1,0 +1,85 @@
+## 📩 Envio de SMS
+
+Após gerar ou redefinir uma senha, o sistema pode enviar a senha temporária ao usuário via SMS utilizando a API de mensagens da GSAPlatform.
+
+### Endpoint
+
+```
+POST https://sms.gsaplatform.co/enviar/sms
+```
+
+### Estrutura do JSON esperado
+
+```json
+{
+  "mensagem": [
+    {
+      "telefone": "string",
+      "mensagemTexto": "string"
+    }
+  ],
+  "nif": "string"
+}
+```
+
+### Campos
+
+| Campo         | Tipo   | Descrição                                          |
+| ------------- | ------ | -------------------------------------------------- |
+| mensagem      | array  | Lista de mensagens a enviar                        |
+| telefone      | string | Número de telefone do destinatário                 |
+| mensagemTexto | string | Conteúdo do SMS                                    |
+| nif           | string | Identificação do cliente que está a consumir a API |
+
+---
+
+## 💻 Exemplo em C# (.NET)
+
+```csharp
+using System.Net.Http;
+using System.Net.Http.Json;
+
+var http = new HttpClient();
+
+var request = new
+{
+    mensagem = new[]
+    {
+        new
+        {
+            telefone = "923000000",
+            mensagemTexto = "Sua senha temporária é 483921"
+        }
+    },
+    nif = "500000000"
+};
+
+var response = await http.PostAsJsonAsync(
+    "https://sms.gsaplatform.co/enviar/sms",
+    request
+);
+
+response.EnsureSuccessStatusCode();
+```
+
+---
+
+## 📌 Exemplo de uso com geração de senha
+
+```csharp
+var passwordService = new PasswordCreateService();
+string senha = await passwordService.GenerateAsync();
+
+string texto = $"Sua senha temporária é {senha}";
+```
+
+A mensagem pode então ser enviada ao utilizador através da API de SMS.
+
+---
+
+## ⚠️ Boas práticas
+
+* Utilize **HTTPS** ao consumir a API.
+* Nunca envie **senhas definitivas** por SMS, apenas **senhas temporárias**.
+* Defina **expiração para senhas temporárias**.
+* Evite enviar múltiplos SMS em curto período para o mesmo número.
