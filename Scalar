@@ -1,0 +1,11 @@
+using Scalar.AspNetCore;
+
+
+app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("PGE360 Admin API")
+            .WithTheme(ScalarTheme.Mars)
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
