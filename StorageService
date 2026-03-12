@@ -94,3 +94,31 @@ public class DeleteFile : IDeleteFile
     }
 }
 ===================================================================================================================================
+
+Program.cs =>
+
+string storagePath = app.Environment.IsDevelopment() ?
+"/Users/cedrickmansoni/Storage/PGE360" :
+"/home/Projectos/Storage/PGE360";
+
+// Configurar middleware para servir arquivos de um diretório externo
+app.UseStaticFiles(new StaticFileOptions
+{
+    //--- 
+    FileProvider = new PhysicalFileProvider(storagePath),
+    RequestPath = "/images", // Caminho acessível via URL
+    ServeUnknownFileTypes = false, // Não servir tipos desconhecidos
+    DefaultContentType = "image/jpeg", // Conteúdo padrão caso a extensão não seja reconhecida
+    OnPrepareResponse = ctx =>
+    {
+        // Bloquear acesso a arquivos sem extensões de imagem
+        if
+        (
+            !ctx.File.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) &&
+            !ctx.File.Name.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            ctx.Context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        }
+    }
+});
